@@ -6,15 +6,15 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
-from nf.utils import unconstrained_RQS
+from .utils import unconstrained_RQS
 
 # supported non-linearities: note that the function must be invertible
 functional_derivatives = {
     torch.tanh: lambda x: 1 - torch.pow(torch.tanh(x), 2),
-    F.leaky_relu: lambda x: (x > 0).type(torch.FloatTensor) + \
-                            (x < 0).type(torch.FloatTensor) * -0.01,
-    F.elu: lambda x: (x > 0).type(torch.FloatTensor) + \
-                     (x < 0).type(torch.FloatTensor) * torch.exp(x)
+    F.leaky_relu: lambda x: (x > 0) + \
+                            (x < 0) * -0.01,
+    F.elu: lambda x: (x > 0) + \
+                     (x < 0) * torch.exp(x)
 }
 
 
@@ -77,7 +77,7 @@ class Radial(nn.Module):
         self.log_alpha = nn.Parameter(torch.Tensor(1))
         self.beta = nn.Parameter(torch.Tensor(1))
 
-    def reset_parameters(dim):
+    def reset_parameters(self, dim):
         init.uniform_(self.z0, -math.sqrt(1/dim), math.sqrt(1/dim))
         init.uniform_(self.log_alpha, -math.sqrt(1/dim), math.sqrt(1/dim))
         init.uniform_(self.beta, -math.sqrt(1/dim), math.sqrt(1/dim))
@@ -211,8 +211,8 @@ class ActNorm(nn.Module):
     def __init__(self, dim):
         super().__init__()
         self.dim = dim
-        self.mu = nn.Parameter(torch.zeros(dim, dtype = torch.float))
-        self.log_sigma = nn.Parameter(torch.zeros(dim, dtype = torch.float))
+        self.mu = nn.Parameter(torch.zeros(dim, dtype = None))
+        self.log_sigma = nn.Parameter(torch.zeros(dim, dtype = None))
 
     def forward(self, x):
         z = x * torch.exp(self.log_sigma) + self.mu
@@ -236,10 +236,10 @@ class OneByOneConv(nn.Module):
         self.dim = dim
         W, _ = sp.linalg.qr(np.random.randn(dim, dim))
         P, L, U = sp.linalg.lu(W)
-        self.P = torch.tensor(P, dtype = torch.float)
-        self.L = nn.Parameter(torch.tensor(L, dtype = torch.float))
-        self.S = nn.Parameter(torch.tensor(np.diag(U), dtype = torch.float))
-        self.U = nn.Parameter(torch.triu(torch.tensor(U, dtype = torch.float),
+        self.P = torch.tensor(P, dtype = None)
+        self.L = nn.Parameter(torch.tensor(L, dtype = None))
+        self.S = nn.Parameter(torch.tensor(np.diag(U), dtype = None))
+        self.U = nn.Parameter(torch.triu(torch.tensor(U, dtype = None),
                               diagonal = 1))
         self.W_inv = None
 
